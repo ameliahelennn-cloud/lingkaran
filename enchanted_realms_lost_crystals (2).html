@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>THE ENCHANTED REALMS — The Lost Crystals</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Nunito:wght@400;600;700;800&display=swap');
+
+  :root {
+    --gold: #f0c14b;
+    --lavender: #9b59b6;
+    --emerald: #2ecc71;
+    --sky: #5dade2;
+    --dark: #1a1423;
+    --panel: rgba(26,20,35,0.92);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #0d0a12;
+    color: #f5eef8;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ========== LAYOUT ========== */
+  #game-wrapper {
+    max-width: 960px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Top HUD */
+  #hud {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--panel);
+    padding: 10px 16px;
+    border-bottom: 2px solid rgba(240,193,75,0.3);
+    flex-wrap: wrap;
+    gap: 8px;
+    z-index: 50;
+  }
+  .hud-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .hud-item {
+    background: rgba(255,255,255,0.08);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+  }
+  .hud-item span { color: var(--gold); }
+
+  /* Scene Area */
+  #scene {
+    flex: 1;
+    position: relative;
+    min-height: 420px;
+    background: #1a1423;
+    overflow: hidden;
+  }
+
+  .scene-bg {
+    width: 100%;
+    height: 100%;
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 20px;
+    background-size: cover;
+    background-position: center;
+    transition: background 0.6s ease;
+  }
+
+  /* Hotspots */
+  .hotspot {
+    position: absolute;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.3s;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    background: rgba(240,193,75,0.15);
+    border: 2px solid transparent;
+  }
+  .hotspot:hover, .hotspot.pulse {
+    background: rgba(240,193,75,0.35);
+    border-color: var(--gold);
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(240,193,75,0.5);
+  }
+  .hotspot.found {
+    opacity: 0.4;
+    pointer-events: none;
+    transform: scale(0.8);
+  }
+
+  /* Dialogue Box */
+  #dialogue-box {
+    background: var(--panel);
+    border-top: 3px solid var(--gold);
+    padding: 16px 20px;
+    min-height: 140px;
+    z-index: 40;
+  }
+  .dialogue-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .char-avatar {
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #9b59b6, #6c3483);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+    border: 2px solid var(--gold);
+  }
+  .char-name {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    color: var(--gold);
+    font-size: 1.05rem;
+  }
+  .dialogue-text {
+    font-size: 1rem;
+    line-height: 1.55;
+    margin-bottom: 12px;
+  }
+  .dialogue-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .choice-btn {
+    background: rgba(155,89,182,0.25);
+    border: 1px solid rgba(155,89,182,0.5);
+    color: #f5eef8;
+    padding: 10px 16px;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.25s;
+  }
+  .choice-btn:hover {
+    background: rgba(155,89,182,0.5);
+    border-color: var(--gold);
+    transform: translateX(6px);
+  }
+
+  /* Inventory */
+  #inventory-bar {
+    background: rgba(0,0,0,0.6);
+    padding: 8px 12px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    border-top: 1px solid rgba(255,255,255,0.1);
+  }
+  .inv-item {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(240,193,75,0.4);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Buttons */
+  .btn {
+    background: linear-gradient(135deg, #9b59b6, #6c3483);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(155,89,182,0.4);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(155,89,182,0.6); }
+  .btn-gold {
+    background: linear-gradient(135deg, #f0c14b, #d4a017);
+    color: #1a1423;
+  }
+  .btn-green { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+  .btn-small { padding: 8px 16px; font-size: 0.9rem; }
+
+  /* Puzzle Overlay */
+  #puzzle-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(13,10,18,0.95);
+    z-index: 100;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  #puzzle-overlay.active { display: block; animation: fadeIn 0.4s; }
+
+  .puzzle-card {
+    max-width: 560px;
+    margin: 0 auto;
+    background: linear-gradient(160deg, #2a1f3d, #1a1423);
+    border-radius: 20px;
+    padding: 24px;
+    border: 2px solid rgba(240,193,75,0.4);
+  }
+  .puzzle-card h3 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .diagram {
+    background: #0d0a12;
+    border-radius: 14px;
+    padding: 12px;
+    margin: 14px 0;
+    display: flex;
+    justify-content: center;
+  }
+  .options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 14px 0;
+  }
+  @media (max-width: 500px) { .options-grid { grid-template-columns: 1fr; } }
+  .opt-btn {
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.15);
+    color: #f5eef8;
+    padding: 12px;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-align: left;
+  }
+  .opt-btn:hover:not(:disabled) { border-color: var(--gold); background: rgba(240,193,75,0.15); }
+  .opt-btn.correct { border-color: var(--emerald); background: rgba(46,204,113,0.2); }
+  .opt-btn.wrong { border-color: #e74c3c; background: rgba(231,76,60,0.2); }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    margin: 14px 0;
+    flex-wrap: wrap;
+  }
+  .input-row input {
+    width: 110px;
+    padding: 12px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    text-align: center;
+    border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.2);
+    background: #0d0a12;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+  }
+  .input-row input:focus { outline: none; border-color: var(--gold); }
+
+  .feedback {
+    padding: 12px;
+    border-radius: 12px;
+    margin-top: 12px;
+    font-weight: 600;
+    text-align: center;
+  }
+  .feedback.ok { background: rgba(46,204,113,0.2); color: #2ecc71; }
+  .feedback.bad { background: rgba(231,76,60,0.2); color: #e74c3c; }
+  .feedback.info { background: rgba(93,173,226,0.2); color: #5dade2; }
+
+  /* Screens */
+  .full-screen {
+    position: fixed;
+    inset: 0;
+    background: #0d0a12;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    overflow-y: auto;
+  }
+  .full-screen h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 2rem;
+    color: var(--gold);
+    margin-bottom: 8px;
+    text-shadow: 0 0 30px rgba(240,193,75,0.4);
+  }
+  .full-screen h2 {
+    font-family: 'Cinzel', serif;
+    color: #c39bd3;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+  }
+  .story-p {
+    max-width: 520px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    color: #d5d0e0;
+  }
+
+  /* Map */
+  .realm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    max-width: 700px;
+    width: 100%;
+    margin: 20px 0;
+  }
+  .realm-card {
+    background: linear-gradient(160deg, #2a1f3d, #1a1423);
+    border: 2px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 18px 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .realm-card:hover:not(.locked) {
+    border-color: var(--gold);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(240,193,75,0.25);
+  }
+  .realm-card.locked { opacity: 0.45; cursor: not-allowed; filter: grayscale(0.7); }
+  .realm-card.done { border-color: var(--emerald); }
+  .realm-icon { font-size: 2.2rem; margin-bottom: 6px; }
+  .realm-name { font-weight: 800; font-size: 0.95rem; }
+  .realm-status { font-size: 0.75rem; color: #aaa; margin-top: 4px; }
+
+  /* Crystal display */
+  .crystals-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .crystal {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.15);
+    transition: all 0.4s;
+  }
+  .crystal.lit {
+    background: rgba(240,193,75,0.25);
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(240,193,75,0.5);
+    animation: crystalGlow 2s infinite;
+  }
+  @keyframes crystalGlow {
+    0%,100% { box-shadow: 0 0 15px rgba(240,193,75,0.4); }
+    50% { box-shadow: 0 0 30px rgba(240,193,75,0.8); }
+  }
+
+  /* Notification */
+  #toast {
+    position: fixed;
+    top: 70px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-weight: 700;
+    z-index: 300;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  }
+  #toast.show { opacity: 1; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Hidden object highlight */
+  .sparkle {
+    animation: sparkle 1.5s infinite;
+  }
+  @keyframes sparkle {
+    0%,100% { filter: brightness(1); }
+    50% { filter: brightness(1.6) drop-shadow(0 0 8px gold); }
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .full-screen h1 { font-size: 1.5rem; }
+    #scene { min-height: 340px; }
+    .scene-bg { min-height: 340px; }
+  }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ========== TITLE SCREEN ========== -->
+<div class="full-screen" id="screen-title">
+  <div style="font-size:3.5rem;margin-bottom:8px;">🌌🔮🧚‍♀️</div>
+  <h1>THE ENCHANTED REALMS</h1>
+  <h2>The Lost Crystals</h2>
+  <p class="story-p">Petualangan Misteri Teorema Lingkaran</p>
+  <p class="story-p">Lima Kristal Lingkaran telah dicuri oleh Malvora. Hutan kehilangan cahaya, sungai berhenti mengalir, dan kerajaan peri terancam. Hanya seorang petualang terpilih yang dapat mengembalikan keseimbangan...</p>
+  <button class="btn btn-gold" style="margin-top:12px;" onclick="startIntro()">✨ Mulai Petualangan</button>
+</div>
+
+<!-- ========== INTRO ========== -->
+<div class="full-screen" id="screen-intro" style="display:none;">
+  <div class="char-avatar" style="width:70px;height:70px;font-size:2rem;margin-bottom:12px;">👑</div>
+  <h2 style="color:var(--gold);">Ratu Elowen</h2>
+  <p class="story-p">Selamat datang, petualang. Aku Ratu Elowen dari Kerajaan Peri. Malvora, penyihir kegelapan, telah mencuri lima Kristal Lingkaran dan menyebarkan pecahannya ke lima alam berbeda.</p>
+  <p class="story-p">Tanpa kristal, sihir negeri ini memudar. Aku menugaskanmu untuk menemukan kembali kelima kristal. Lumina akan menemanimu. Dia dapat merasakan jejak sihir lingkaran.</p>
+  <p class="story-p" style="color:var(--gold);font-weight:700;">Apakah kau siap menerima misi ini?</p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:10px;">
+    <button class="btn btn-green" onclick="acceptMission()">Aku siap, Yang Mulia!</button>
+    <button class="btn" onclick="acceptMission()">Ceritakan lebih banyak dulu...</button>
+  </div>
+</div>
+
+<!-- ========== REALM MAP ========== -->
+<div class="full-screen" id="screen-map" style="display:none;">
+  <h1 style="font-size:1.6rem;">Peta Enchanted Realms</h1>
+  <div class="crystals-row" id="map-crystals"></div>
+  <p class="story-p" style="margin-bottom:8px;">Pilih dunia yang ingin dijelajahi. Selesaikan secara berurutan untuk membuka dunia berikutnya.</p>
+  <div class="realm-grid" id="realm-grid"></div>
+  <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+    <div class="hud-item">💎 Skor: <span id="map-score">0</span></div>
+    <div class="hud-item">🔑 Petunjuk: <span id="map-clues">0</span></div>
+  </div>
+</div>
+
+<!-- ========== MAIN GAME ========== -->
+<div id="game-wrapper" style="display:none;">
+  <div id="hud">
+    <div class="hud-group">
+      <div class="hud-item">💎 <span id="hud-score">0</span></div>
+      <div class="hud-item">❤️ <span id="hud-lives">3</span></div>
+      <div class="hud-item" id="hud-realm">The Whispering Woods</div>
+    </div>
+    <div class="hud-group">
+      <button class="btn btn-small" onclick="openInventory()">🎒 Inventory</button>
+      <button class="btn btn-small" onclick="returnToMap()">🗺️ Peta</button>
+    </div>
+  </div>
+
+  <div id="scene">
+    <div class="scene-bg" id="scene-bg">
+      <!-- Hotspots injected here -->
+    </div>
+    <div id="puzzle-overlay">
+      <div class="puzzle-card" id="puzzle-content"></div>
+    </div>
+  </div>
+
+  <div id="dialogue-box">
+    <div class="dialogue-header">
+      <div class="char-avatar" id="dlg-avatar">🧚‍♀️</div>
+      <div class="char-name" id="dlg-name">Lumina</div>
+    </div>
+    <div class="dialogue-text" id="dlg-text">Selamat datang di hutan yang berbisik...</div>
+    <div class="dialogue-choices" id="dlg-choices"></div>
+  </div>
+
+  <div id="inventory-bar"></div>
+</div>
+
+<!-- ========== LEVEL COMPLETE ========== -->
+<div class="full-screen" id="screen-complete" style="display:none;">
+  <div style="font-size:3.5rem;" id="complete-crystal">💎</div>
+  <h1 style="font-size:1.6rem;">Kristal Ditemukan!</h1>
+  <p class="story-p" id="complete-text"></p>
+  <button class="btn btn-gold" onclick="returnToMap()">Kembali ke Peta Realms</button>
+</div>
+
+<!-- ========== FINAL ========== -->
+<div class="full-screen" id="screen-final" style="display:none;">
+  <div style="font-size:3.5rem;">🏰✨👑</div>
+  <h1>Enchanted Realms Terselamatkan!</h1>
+  <p class="story-p">Kelima Kristal Lingkaran kembali bersinar. Malvora dikalahkan oleh kekuatan pengetahuan geometrimu. Ratu Elowen menganugerahkan gelar tertinggi...</p>
+  <div style="font-family:'Cinzel',serif;font-size:1.5rem;color:var(--gold);margin:16px 0;padding:12px 28px;border:2px solid var(--gold);border-radius:40px;" id="final-title">Master of the Circle Realms</div>
+  <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin:16px 0;">
+    <div><div style="font-size:1.8rem;font-weight:800;color:var(--gold);" id="final-score">0</div><div style="font-size:0.85rem;color:#aaa;">Total Skor</div></div>
+    <div><div style="font-size:1.8rem;font-weight:800;color:var(--emerald);" id="final-crystals">5</div><div style="font-size:0.85rem;color:#aaa;">Kristal</div></div>
+  </div>
+  <button class="btn btn-gold" onclick="location.reload()">Main Lagi</button>
+</div>
+
+<script>
+// ===================== DATA =====================
+const REALMS = [
+  {
+    id: 0,
+    name: "The Whispering Woods",
+    icon: "🌲",
+    crystal: "💚",
+    color: "linear-gradient(160deg,#0b3d2e 0%,#1a3a2a 40%,#0d2818 100%)",
+    intro: "Kamu memasuki hutan yang dulu penuh cahaya kunang-kunang. Kini gelap dan sunyi. Gerbang desa peri terkunci oleh segel lingkaran kuno.",
+    scenes: {
+      entrance: {
+        text: "Di depanmu berdiri gerbang kayu kuno yang tertutup rapat. Simbol lingkaran berkilau lemah di tengahnya. Beberapa pohon di sekitar tampak mencurigakan...",
+        hotspots: [
+          { id: "tree1", x: "18%", y: "55%", emoji: "🌳", label: "Pohon Berukir", action: "inspectTree1" },
+          { id: "tree2", x: "72%", y: "48%", emoji: "🌲", label: "Pohon Tinggi", action: "inspectTree2" },
+          { id: "gate", x: "50%", y: "60%", emoji: "🚪", label: "Gerbang", action: "inspectGate" },
+          { id: "mushroom", x: "30%", y: "75%", emoji: "🍄", label: "Jamur Ajaib", action: "inspectMushroom" },
+          { id: "tiko", x: "80%", y: "70%", emoji: "🧚", label: "Tiko", action: "talkTiko", showIf: "metTiko" }
+        ]
+      }
+    },
+    puzzles: [
+      {
+        id: "symbol1",
+        title: "Simbol Jari-jari",
+        q: "Ukiran di pohon menunjukkan lingkaran dengan garis dari pusat ke keliling. Apakah nama unsur ini?",
+        type: "mc",
+        diagram: "radius",
+        options: ["Diameter", "Jari-jari (Radius)", "Tali Busur", "Busur"],
+        answer: 1,
+        explain: "Jari-jari adalah ruas garis dari pusat lingkaran ke titik di keliling.",
+        reward: "symbol_radius"
+      },
+      {
+        id: "symbol2",
+        title: "Simbol Diameter",
+        q: "Ukiran kedua menampilkan garis yang membelah lingkaran melalui pusat. Ini disebut...",
+        type: "mc",
+        diagram: "diameter",
+        options: ["Jari-jari", "Tali Busur", "Diameter", "Juring"],
+        answer: 2,
+        explain: "Diameter adalah tali busur terpanjang yang melalui pusat. Panjangnya = 2 × jari-jari.",
+        reward: "symbol_diameter"
+      },
+      {
+        id: "gatePuzzle",
+        title: "Segel Gerbang Hutan",
+        q: "Untuk membuka gerbang, selesaikan: Jika jari-jari lingkaran segel adalah 6 cm, berapakah panjang diameternya?",
+        type: "input",
+        diagram: "diameter",
+        answer: 12,
+        unit: "cm",
+        explain: "Diameter = 2 × jari-jari = 2 × 6 = 12 cm.",
+        reward: "gate_key"
+      }
+    ]
+  },
+  {
+    id: 1,
+    name: "Crystal Lake",
+    icon: "💧",
+    crystal: "💙",
+    color: "linear-gradient(160deg,#0a2a3d 0%,#1a3a4a 40%,#0d1f2b 100%)",
+    intro: "Danau kristal yang dulu jernih kini membeku sebagian. Astra, penjaga danau, menunggu di tepi air. Sudut-sudut lingkaran menyimpan kunci untuk mencairkan danau.",
+    scenes: {
+      shore: {
+        text: "Air danau memantulkan cahaya lemah. Astra berdiri di atas batu datar. Beberapa pola sudut terlihat di permukaan es.",
+        hotspots: [
+          { id: "astra", x: "55%", y: "50%", emoji: "🧜‍♀️", label: "Astra", action: "talkAstra" },
+          { id: "ice1", x: "25%", y: "65%", emoji: "❄️", label: "Pola Es 1", action: "puzzleCentral" },
+          { id: "ice2", x: "75%", y: "60%", emoji: "🧊", label: "Pola Es 2", action: "puzzleInscribed" },
+          { id: "boat", x: "40%", y: "80%", emoji: "🛶", label: "Perahu Kecil", action: "inspectBoat" }
+        ]
+      }
+    },
+    puzzles: [
+      {
+        id: "central",
+        title: "Sudut Pusat Danau",
+        q: "Sudut pusat yang menghadap busur AB adalah 100°. Berapakah sudut keliling yang menghadap busur yang sama?",
+        type: "mc",
+        diagram: "central",
+        options: ["100°", "50°", "200°", "25°"],
+        answer: 1,
+        explain: "Sudut keliling = ½ × sudut pusat = ½ × 100° = 50°.",
+        reward: "clue_angle1"
+      },
+      {
+        id: "inscribed",
+        title: "Sudut Keliling Es",
+        q: "Sudut keliling sebesar 40° menghadap suatu busur. Berapakah sudut pusat yang menghadap busur yang sama?",
+        type: "input",
+        diagram: "central",
+        answer: 80,
+        unit: "°",
+        explain: "Sudut pusat = 2 × sudut keliling = 2 × 40° = 80°.",
+        reward: "clue_angle2"
+      },
+      {
+        id: "lakeFinal",
+        title: "Pencairan Danau",
+        q: "Astra membutuhkan angka rahasia: sudut pusat 70° → sudut keliling = ? Kemudian jumlahkan dengan 20.",
+        type: "input",
+        diagram: "central",
+        answer: 55,
+        unit: "",
+        explain: "Sudut keliling = 35°. 35 + 20 = 55.",
+        reward: "crystal_lake"
+      }
+    ]
+  },
+  {
+    id: 2,
+    name: "Frozen Fairy Kingdom",
+    icon: "🏰",
+    crystal: "💜",
+    color: "linear-gradient(160deg,#2a1a3d 0%,#1f1530 40%,#150d22 100%)",
+    intro: "Kerajaan peri membeku. Istana tertutup es. Hanya sudut yang menghadap diameter yang dapat memecahkan kutukan ini.",
+    scenes: {
+      courtyard: {
+        text: "Halaman istana beku. Sebuah lingkaran besar terukir di tanah dengan diameter yang jelas. Seorang peri penjaga menunggu.",
+        hotspots: [
+          { id: "circle", x: "50%", y: "55%", emoji: "⭕", label: "Lingkaran Es", action: "puzzleSemi" },
+          { id: "statue", x: "20%", y: "60%", emoji: "🗿", label: "Patung Peri", action: "inspectStatue" },
+          { id: "door", x: "78%", y: "50%", emoji: "🚪", label: "Pintu Istana", action: "tryDoor" },
+          { id: "guard", x: "65%", y: "70%", emoji: "🧚‍♀️", label: "Penjaga", action: "talkGuard" }
+        ]
+      }
+    },
+    puzzles: [
+      {
+        id: "semi",
+        title: "Sudut Setengah Lingkaran",
+        q: "AB adalah diameter. Titik C di keliling. Berapakah besar ∠ACB?",
+        type: "mc",
+        diagram: "semi",
+        options: ["45°", "60°", "90°", "120°"],
+        answer: 2,
+        explain: "Teorema: sudut keliling yang menghadap diameter selalu 90°.",
+        reward: "clue_semi"
+      },
+      {
+        id: "semi2",
+        title: "Segitiga Siku-siku",
+        q: "AB diameter, ∠ACB = 90°, ∠BAC = 30°. Berapakah ∠ABC?",
+        type: "input",
+        diagram: "semi",
+        answer: 60,
+        unit: "°",
+        explain: "Jumlah sudut segitiga = 180°. 180° - 90° - 30° = 60°.",
+        reward: "clue_semi2"
+      },
+      {
+        id: "kingdomFinal",
+        title: "Pintu Istana Beku",
+        q: "Untuk membuka pintu: sudut yang menghadap diameter + sudut pusat 50° yang diubah ke keliling = ?",
+        type: "input",
+        diagram: "semi",
+        answer: 115,
+        unit: "°",
+        explain: "90° + (½ × 50°) = 90° + 25° = 115°.",
+        reward: "crystal_kingdom"
+      }
+    ]
+  },
+  {
+    id: 3,
+    name: "Tower of Time",
+    icon: "⌛",
+    crystal: "💛",
+    color: "linear-gradient(160deg,#3d2a0a 0%,#2a1f0d 40%,#1a1408 100%)",
+    intro: "Menara Waktu mengalami kekacauan. Tali-tali busur di mekanisme menara harus diatur ulang berdasarkan jaraknya terhadap pusat.",
+    scenes: {
+      hall: {
+        text: "Di dalam menara, roda gigi berbentuk lingkaran berputar tidak beraturan. Eldrin si penyihir tua menunggu di dekat mekanisme utama.",
+        hotspots: [
+          { id: "eldrin", x: "60%", y: "45%", emoji: "🧙‍♂️", label: "Eldrin", action: "talkEldrin" },
+          { id: "gear1", x: "30%", y: "55%", emoji: "⚙️", label: "Roda Gigi A", action: "puzzleChord1" },
+          { id: "gear2", x: "75%", y: "60%", emoji: "⚙️", label: "Roda Gigi B", action: "puzzleChord2" },
+          { id: "lever", x: "45%", y: "75%", emoji: "🕹️", label: "Tuas Utama", action: "puzzleTowerFinal" }
+        ]
+      }
+    },
+    puzzles: [
+      {
+        id: "chord1",
+        title: "Tali Busur & Jarak",
+        q: "Tali busur yang lebih panjang terletak... terhadap pusat lingkaran.",
+        type: "mc",
+        diagram: "chords",
+        options: ["Lebih jauh", "Lebih dekat", "Jarak sama", "Tidak berhubungan"],
+        answer: 1,
+        explain: "Semakin panjang tali busur, semakin dekat ke pusat. Diameter (terpanjang) melalui pusat.",
+        reward: "clue_chord1"
+      },
+      {
+        id: "chord2",
+        title: "Tali Busur Sama Panjang",
+        q: "Dua tali busur sama panjang. Apa yang benar tentang jaraknya ke pusat?",
+        type: "mc",
+        diagram: "chords",
+        options: ["Jarak berbeda", "Jarak sama", "Salah satu harus diameter", "Saling tegak lurus"],
+        answer: 1,
+        explain: "Tali busur sama panjang berada pada jarak yang sama dari pusat.",
+        reward: "clue_chord2"
+      },
+      {
+        id: "towerFinal",
+        title: "Mekanisme Menara",
+        q: "Tali busur AB jarak 2 cm dari pusat, CD jarak 6 cm. Mana yang lebih panjang? (Jawab: AB atau CD)",
+        type: "input",
+        diagram: "chords",
+        answer: "AB",
+        explain: "Yang lebih dekat ke pusat (jarak lebih kecil) lebih panjang. Jadi AB.",
+        reward: "crystal_tower"
+      }
+    ]
+  },
+  {
+    id: 4,
+    name: "Sky Palace",
+    icon: "☁️",
+    crystal: "❤️",
+    color: "linear-gradient(160deg,#1a0a2e 0%,#150825 40%,#0d0618 100%)",
+    intro: "Istana Langit tertutup kabut sihir Malvora. Ini adalah tantangan terakhir. Gabungkan semua pengetahuan Teorema Lingkaranmu!",
+    scenes: {
+      throne: {
+        text: "Malvora berdiri di depan takhta yang retak. Kabut sihir membentuk pola-pola lingkaran di udara. Saatnya konfrontasi akhir!",
+        hotspots: [
+          { id: "malvora", x: "50%", y: "40%", emoji: "🦹‍♀️", label: "Malvora", action: "confrontMalvora" },
+          { id: "orb1", x: "25%", y: "55%", emoji: "🔮", label: "Orb 1", action: "puzzleMixed1" },
+          { id: "orb2", x: "75%", y: "55%", emoji: "🔮", label: "Orb 2", action: "puzzleMixed2" },
+          { id: "throne", x: "50%", y: "70%", emoji: "🪑", label: "Takhta", action: "puzzleFinal" }
+        ]
+      }
+    },
+    puzzles: [
+      {
+        id: "mixed1",
+        title: "Orb Sihir Pertama",
+        q: "Sudut pusat 90°. Sudut keliling yang menghadap busur sama + sudut menghadap diameter = ?",
+        type: "input",
+        diagram: "mixed",
+        answer: 135,
+        unit: "°",
+        explain: "Sudut keliling = 45°. 45° + 90° = 135°.",
+        reward: "orb1"
+      },
+      {
+        id: "mixed2",
+        title: "Orb Sihir Kedua",
+        q: "AB diameter. Tali busur CD lebih dekat ke pusat daripada EF. Manakah yang lebih panjang?",
+        type: "mc",
+        diagram: "chords",
+        options: ["EF", "CD", "Sama panjang", "Tidak dapat ditentukan"],
+        answer: 1,
+        explain: "Lebih dekat ke pusat = lebih panjang. Jadi CD lebih panjang.",
+        reward: "orb2"
+      },
+      {
+        id: "finalBoss",
+        title: "Pertempuran Terakhir vs Malvora",
+        q: "Malvora: 'Jika sudut pusat 120° dan ada sudut menghadap diameter, berapakah jumlah sudut keliling dari busur itu dengan 90°?'",
+        type: "input",
+        diagram: "mixed",
+        answer: 150,
+        unit: "°",
+        explain: "Sudut keliling = 60°. 60° + 90° = 150°.",
+        reward: "crystal_sky"
+      }
+    ]
+  }
+];
+
+// ===================== STATE =====================
+let state = {
+  score: 0,
+  lives: 3,
+  crystals: [false,false,false,false,false],
+  inventory: [],
+  flags: {},          // story flags
+  currentRealm: 0,
+  currentScene: "entrance",
+  solvedPuzzles: {},
+  clues: 0
+};
+
+// ===================== UTILS =====================
+function $(id) { return document.getElementById(id); }
+function show(el) { el.style.display = "flex"; }
+function hide(el) { el.style.display = "none"; }
+
+function toast(msg, time=2200) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), time);
+}
+
+function addItem(id, name, emoji) {
+  if (state.inventory.find(i => i.id === id)) return;
+  state.inventory.push({ id, name, emoji });
+  renderInventory();
+  toast(`${emoji} ${name} diperoleh!`);
+}
+
+function hasItem(id) {
+  return state.inventory.some(i => i.id === id);
+}
+
+function setFlag(f) { state.flags[f] = true; }
+function hasFlag(f) { return !!state.flags[f]; }
+
+function renderInventory() {
+  const bar = $("inventory-bar");
+  if (state.inventory.length === 0) {
+    bar.innerHTML = `<div class="inv-item" style="opacity:0.5;">Inventory kosong</div>`;
+    return;
+  }
+  bar.innerHTML = state.inventory.map(i => 
+    `<div class="inv-item">${i.emoji} ${i.name}</div>`
+  ).join("");
+}
+
+function updateHUD() {
+  $("hud-score").textContent = state.score;
+  $("hud-lives").textContent = state.lives;
+  $("hud-realm").textContent = REALMS[state.currentRealm].name;
+  renderInventory();
+}
+
+// ===================== SCREENS =====================
+function startIntro() {
+  hide($("screen-title"));
+  show($("screen-intro"));
+}
+
+function acceptMission() {
+  hide($("screen-intro"));
+  showMap();
+}
+
+function showMap() {
+  hide($("game-wrapper"));
+  hide($("screen-complete"));
+  const grid = $("realm-grid");
+  grid.innerHTML = "";
+  REALMS.forEach((r, i) => {
+    const unlocked = i === 0 || state.crystals[i-1];
+    const done = state.crystals[i];
+    const card = document.createElement("div");
+    card.className = "realm-card" + (unlocked ? "" : " locked") + (done ? " done" : "");
+    card.innerHTML = `
+      <div class="realm-icon">${r.icon}</div>
+      <div class="realm-name">${r.name}</div>
+      <div class="realm-status">${done ? "✅ Kristal diperoleh" : unlocked ? "Tersedia" : "🔒 Terkunci"}</div>
+    `;
+    if (unlocked && !done) {
+      card.onclick = () => enterRealm(i);
+    } else if (done) {
+      card.onclick = () => toast("Kristal dari dunia ini sudah diambil.");
+    }
+    grid.appendChild(card);
+  });
+
+  // crystals
+  const cr = $("map-crystals");
+  cr.innerHTML = REALMS.map((r,i) => 
+    `<div class="crystal ${state.crystals[i] ? "lit" : ""}">${state.crystals[i] ? r.crystal : "🖤"}</div>`
+  ).join("");
+
+  $("map-score").textContent = state.score;
+  $("map-clues").textContent = state.clues;
+  show($("screen-map"));
+
+  // check win
+  if (state.crystals.every(c => c)) {
+    setTimeout(showFinal, 800);
+  }
+}
+
+function enterRealm(idx) {
+  state.currentRealm = idx;
+  state.currentScene = Object.keys(REALMS[idx].scenes)[0];
+  state.lives = 3;
+  hide($("screen-map"));
+  show($("game-wrapper"));
+  updateHUD();
+  loadScene();
+  // intro dialogue
+  setDialogue("Lumina", "🧚‍♀️", REALMS[idx].intro, [
+    { text: "Baik, mari jelajahi!", action: () => setDialogue("Lumina", "🧚‍♀️", "Klik pada objek bercahaya di sekitar untuk berinteraksi. Kumpulkan petunjuk dan selesaikan teka-teki!", []) }
+  ]);
+}
+
+function returnToMap() {
+  $("puzzle-overlay").classList.remove("active");
+  showMap();
+}
+
+// ===================== SCENE =====================
+function loadScene() {
+  const realm = REALMS[state.currentRealm];
+  const scene = realm.scenes[state.currentScene];
+  const bg = $("scene-bg");
+  bg.style.background = realm.color;
+  bg.innerHTML = "";
+
+  // title overlay
+  const title = document.createElement("div");
+  title.style.cssText = "position:absolute;top:12px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);padding:6px 16px;border-radius:20px;font-size:0.85rem;font-weight:700;z-index:5;";
+  title.textContent = realm.name;
+  bg.appendChild(title);
+
+  scene.hotspots.forEach(h => {
+    if (h.showIf && !hasFlag(h.showIf)) return;
+    if (h.hideIf && hasFlag(h.hideIf)) return;
+    const el = document.createElement("div");
+    el.className = "hotspot" + (hasFlag("found_"+h.id) ? " found" : " pulse");
+    el.style.left = h.x;
+    el.style.top = h.y;
+    el.style.width = "52px";
+    el.style.height = "52px";
+    el.innerHTML = h.emoji;
+    el.title = h.label;
+    el.onclick = () => doAction(h.action, h.id);
+    bg.appendChild(el);
+  });
+}
+
+// ===================== DIALOGUE =====================
+function setDialogue(name, avatar, text, choices = []) {
+  $("dlg-name").textContent = name;
+  $("dlg-avatar").textContent = avatar;
+  $("dlg-text").textContent = text;
+  const box = $("dlg-choices");
+  box.innerHTML = "";
+  choices.forEach(c => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.textContent = c.text;
+    btn.onclick = () => c.action();
+    box.appendChild(btn);
+  });
+}
+
+// ===================== ACTIONS =====================
+function doAction(action, hotspotId) {
+  const actions = {
+    // --- Level 1: Woods ---
+    inspectTree1() {
+      if (hasFlag("symbol1_done")) {
+        setDialogue("Lumina", "🧚‍♀️", "Simbol jari-jari sudah kamu temukan di sini.", []);
+        return;
+      }
+      setDialogue("Lumina", "🧚‍♀️", "Ada ukiran kuno di kulit pohon ini! Sepertinya simbol unsur lingkaran...", [
+        { text: "Periksa ukiran", action: () => openPuzzle("symbol1") }
+      ]);
+    },
+    inspectTree2() {
+      if (hasFlag("symbol2_done")) {
+        setDialogue("Lumina", "🧚‍♀️", "Simbol diameter sudah diambil.", []);
+        return;
+      }
+      setDialogue("Lumina", "🧚‍♀️", "Pohon ini juga punya ukiran berbeda. Ayo perhatikan!", [
+        { text: "Periksa ukiran", action: () => openPuzzle("symbol2") }
+      ]);
+    },
+    inspectGate() {
+      if (hasItem("gate_key")) {
+        setDialogue("Lumina", "🧚‍♀️", "Gerbang terbuka! Kristal hutan berada di baliknya...", [
+          { text: "Ambil Kristal Hutan", action: () => collectCrystal(0) }
+        ]);
+        return;
+      }
+      if (hasItem("symbol_radius") && hasItem("symbol_diameter")) {
+        setDialogue("Lumina", "🧚‍♀️", "Kedua simbol sudah lengkap! Sekarang selesaikan teka-teki terakhir untuk membuka gerbang.", [
+          { text: "Selesaikan segel gerbang", action: () => openPuzzle("gatePuzzle") }
+        ]);
+      } else {
+        setDialogue("Lumina", "🧚‍♀️", "Gerbang terkunci oleh segel lingkaran. Cari dua simbol rahasia di pohon-pohon sekitar dulu!", []);
+      }
+    },
+    inspectMushroom() {
+      setDialogue("Lumina", "🧚‍♀️", "Jamur ajaib ini berbisik... 'Jari-jari selalu setengah dari diameter...'", [
+        { text: "Terima kasih, jamur!", action: () => { state.clues++; toast("Petunjuk diperoleh!"); } }
+      ]);
+    },
+    talkTiko() {
+      setDialogue("Tiko", "🧚", "Hehe, kau menemukan Tiko! Aku suka teka-teki. Sudah dapat kedua simbol belum?", [
+        { text: "Belum, beri petunjuk dong!", action: () => setDialogue("Tiko", "🧚", "Cari pohon yang berbeda! Satu punya garis pendek dari tengah, satu lagi garis panjang yang membelah.", []) },
+        { text: "Sudah! Bagaimana membuka gerbang?", action: () => setDialogue("Tiko", "🧚", "Kalau sudah punya kedua simbol, gerbang akan meminta angka diameter. Hitung dengan benar ya!", []) }
+      ]);
+    },
+
+    // --- Level 2: Lake ---
+    talkAstra() {
+      setDialogue("Astra", "🧜‍♀️", "Selamat datang di Danau Kristal. Es ini hanya bisa mencair jika sudut-sudut lingkaran diseimbangkan.", [
+        { text: "Bagaimana caranya?", action: () => setDialogue("Astra", "🧜‍♀️", "Selesaikan pola sudut di permukaan es. Ingat: sudut pusat = 2 × sudut keliling.", []) },
+        { text: "Aku siap membantu!", action: () => setDialogue("Astra", "🧜‍♀️", "Baguslah pada dua pola es di sekitarku. Setelah itu kembali kepadaku.", []) }
+      ]);
+    },
+    puzzleCentral() {
+      if (hasFlag("central_done")) { setDialogue("Lumina", "🧚‍♀️", "Pola ini sudah diselesaikan.", []); return; }
+      openPuzzle("central");
+    },
+    puzzleInscribed() {
+      if (hasFlag("inscribed_done")) { setDialogue("Lumina", "🧚‍♀️", "Pola ini sudah diselesaikan.", []); return; }
+      openPuzzle("inscribed");
+    },
+    inspectBoat() {
+      if (hasItem("clue_angle1") && hasItem("clue_angle2")) {
+        setDialogue("Lumina", "🧚‍♀️", "Perahu bereaksi terhadap petunjuk sudutmu! Ada teka-teki terakhir di sini.", [
+          { text: "Selesaikan", action: () => openPuzzle("lakeFinal") }
+        ]);
+      } else {
+        setDialogue("Lumina", "🧚‍♀️", "Perahu ini tampak terkunci sihir. Selesaikan kedua pola es dulu.", []);
+      }
+    },
+
+    // --- Level 3: Kingdom ---
+    puzzleSemi() {
+      if (hasFlag("semi_done")) { setDialogue("Lumina", "🧚‍♀️", "Lingkaran es ini sudah aktif.", []); return; }
+      openPuzzle("semi");
+    },
+    inspectStatue() {
+      setDialogue("Lumina", "🧚‍♀️", "Patung ini memegang sebuah tablet: 'Sudut yang menghadap diameter selalu siku-siku.'", [
+        { text: "Catat petunjuk", action: () => { state.clues++; toast("Petunjuk sudut 90° dicatat!"); } }
+      ]);
+    },
+    tryDoor() {
+      if (hasItem("clue_semi") && hasItem("clue_semi2")) {
+        openPuzzle("kingdomFinal");
+      } else {
+        setDialogue("Lumina", "🧚‍♀️", "Pintu masih membeku. Selesaikan teka-teki di lingkaran es dan cari petunjuk lain.", []);
+      }
+    },
+    talkGuard() {
+      setDialogue("Penjaga Peri", "🧚‍♀️", "Istana membeku sejak kristal hilang. Hanya sudut 90° yang menghadap diameter yang dapat mencairkannya.", []);
+    },
+
+    // --- Level 4: Tower ---
+    talkEldrin() {
+      setDialogue("Eldrin", "🧙‍♂️", "Ah, petualang muda. Mekanisme menara ini bergantung pada tali busur. Yang lebih panjang harus lebih dekat ke pusat.", [
+        { text: "Jelaskan lebih lanjut", action: () => setDialogue("Eldrin", "🧙‍♂️", "Bayangkan diameter — tali busur terpanjang — selalu melalui pusat. Semakin jauh dari pusat, semakin pendek tali busurnya.", []) },
+        { text: "Aku akan perbaiki", action: () => setDialogue("Eldrin", "🧙‍♂️", "Bagus roda gigi di sekitarku. Setelah itu aktifkan tuas utama.", []) }
+      ]);
+    },
+    puzzleChord1() {
+      if (hasFlag("chord1_done")) { toast("Sudah diselesaikan"); return; }
+      openPuzzle("chord1");
+    },
+    puzzleChord2() {
+      if (hasFlag("chord2_done")) { toast("Sudah diselesaikan"); return; }
+      openPuzzle("chord2");
+    },
+    puzzleTowerFinal() {
+      if (hasItem("clue_chord1") && hasItem("clue_chord2")) {
+        openPuzzle("towerFinal");
+      } else {
+        setDialogue("Eldrin", "🧙‍♂️", "Tuas masih terkunci. Selesaikan kedua roda gigi dulu!", []);
+      }
+    },
+
+    // --- Level 5: Sky ---
+    confrontMalvora() {
+      setDialogue("Malvora", "🦹‍♀️", "Kau pikir pengetahuan geometrimu bisa mengalahkanku? Selesaikan orb-orb sihirku dulu jika berani!", [
+        { text: "Aku tidak takut!", action: () => setDialogue("Malvora", "🦹‍♀️", "Hahaha... maka buktikan!", []) }
+      ]);
+    },
+    puzzleMixed1() {
+      if (hasFlag("mixed1_done")) { toast("Orb sudah redup"); return; }
+      openPuzzle("mixed1");
+    },
+    puzzleMixed2() {
+      if (hasFlag("mixed2_done")) { toast("Orb sudah redup"); return; }
+      openPuzzle("mixed2");
+    },
+    puzzleFinal() {
+      if (hasItem("orb1") && hasItem("orb2")) {
+        openPuzzle("finalBoss");
+      } else {
+        setDialogue("Malvora", "🦹‍♀️", "Takhta ini masih dilindungi. Padamkan kedua orb sihirku dulu!", []);
+      }
+    }
+  };
+
+  if (actions[action]) actions[action]();
+  else setDialogue("Lumina", "🧚‍♀️", "Tidak ada yang terjadi...", []);
+}
+
+// ===================== PUZZLES =====================
+function openPuzzle(puzzleId) {
+  const realm = REALMS[state.currentRealm];
+  const puzzle = realm.puzzles.find(p => p.id === puzzleId);
+  if (!puzzle) return;
+  if (state.solvedPuzzles[puzzleId]) {
+    toast("Teka-teki ini sudah diselesaikan.");
+    return;
+  }
+
+  const overlay = $("puzzle-overlay");
+  const content = $("puzzle-content");
+  let html = `<h3>${puzzle.title}</h3>
+    <p style="text-align:center;margin-bottom:8px;">${puzzle.q}</p>
+    <div class="diagram">${getDiagram(puzzle.diagram)}</div>`;
+
+  if (puzzle.type === "mc") {
+    html += `<div class="options-grid">`;
+    puzzle.options.forEach((opt, i) => {
+      html += `<button class="opt-btn" onclick="answerMC('${puzzleId}',${i})">${String.fromCharCode(65+i)}. ${opt}</button>`;
+    });
+    html += `</div>`;
+  } else {
+    html += `<div class="input-row">
+      <input type="text" id="puzzle-input" placeholder="Jawaban" autocomplete="off">
+      ${puzzle.unit ? `<span style="font-weight:700;">${puzzle.unit}</span>` : ""}
+      <button class="btn btn-small btn-green" onclick="answerInput('${puzzleId}')">Jawab</button>
+    </div>`;
+  }
+  html += `<div id="puzzle-feedback"></div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn btn-small" onclick="closePuzzle()">Tutup</button>
+    </div>`;
+  content.innerHTML = html;
+  overlay.classList.add("active");
+
+  if (puzzle.type === "input") {
+    $("puzzle-input").addEventListener("keydown", e => { if (e.key === "Enter") answerInput(puzzleId); });
+  }
+}
+
+function closePuzzle() {
+  $("puzzle-overlay").classList.remove("active");
+}
+
+function answerMC(puzzleId, selected) {
+  const realm = REALMS[state.currentRealm];
+  const puzzle = realm.puzzles.find(p => p.id === puzzleId);
+  const btns = document.querySelectorAll(".opt-btn");
+  btns.forEach(b => b.disabled = true);
+
+  if (selected === puzzle.answer) {
+    btns[selected].classList.add("correct");
+    $("puzzle-feedback").innerHTML = `<div class="feedback ok">✅ Benar! ${puzzle.explain}</div>`;
+    state.score += 100;
+    finishPuzzle(puzzle);
+  } else {
+    btns[selected].classList.add("wrong");
+    btns[puzzle.answer].classList.add("correct");
+    state.lives--;
+    updateHUD();
+    $("puzzle-feedback").innerHTML = `<div class="feedback bad">❌ Salah. ${puzzle.explain}</div>`;
+    if (state.lives <= 0) {
+      $("puzzle-feedback").innerHTML += `<div class="feedback info" style="margin-top:8px;">Kesempatan habis! Kembali ke peta.</div>`;
+      setTimeout(() => { closePuzzle(); returnToMap(); }, 2000);
+    }
+  }
+  updateHUD();
+}
+
+function answerInput(puzzleId) {
+  const realm = REALMS[state.currentRealm];
+  const puzzle = realm.puzzles.find(p => p.id === puzzleId);
+  const input = $("puzzle-input");
+  let val = input.value.trim().toUpperCase();
+  if (!val) return;
+  input.disabled = true;
+
+  let correct = false;
+  if (typeof puzzle.answer === "number") {
+    const num = parseFloat(val.replace(",", "."));
+    correct = !isNaN(num) && Math.abs(num - puzzle.answer) < 0.15;
+  } else {
+    correct = val === String(puzzle.answer).toUpperCase();
+  }
+
+  if (correct) {
+    $("puzzle-feedback").innerHTML = `<div class="feedback ok">✅ Benar! ${puzzle.explain}</div>`;
+    state.score += 100;
+    finishPuzzle(puzzle);
+  } else {
+    state.lives--;
+    updateHUD();
+    $("puzzle-feedback").innerHTML = `<div class="feedback bad">❌ Jawaban benar: ${puzzle.answer}${puzzle.unit||""}<br>${puzzle.explain}</div>`;
+    if (state.lives <= 0) {
+      $("puzzle-feedback").innerHTML += `<div class="feedback info" style="margin-top:8px;">Kesempatan habis!</div>`;
+      setTimeout(() => { closePuzzle(); returnToMap(); }, 2000);
+    } else {
+      input.disabled = false;
+    }
+  }
+  updateHUD();
+}
+
+function finishPuzzle(puzzle) {
+  state.solvedPuzzles[puzzle.id] = true;
+  setFlag(puzzle.id + "_done");
+  if (puzzle.reward) {
+    if (puzzle.reward.startsWith("crystal_")) {
+      // handled by collectCrystal
+    } else if (puzzle.reward.startsWith("symbol_") || puzzle.reward.startsWith("clue_") || puzzle.reward.startsWith("orb") || puzzle.reward === "gate_key") {
+      const names = {
+        symbol_radius: ["Simbol Jari-jari", "📐"],
+        symbol_diameter: ["Simbol Diameter", "📏"],
+        gate_key: ["Kunci Gerbang", "🔑"],
+        clue_angle1: ["Petunjuk Sudut 1", "📜"],
+        clue_angle2: ["Petunjuk Sudut 2", "📜"],
+        clue_semi: ["Petunjuk 90°", "📜"],
+        clue_semi2: ["Petunjuk Segitiga", "📜"],
+        clue_chord1: ["Petunjuk Tali Busur", "📜"],
+        clue_chord2: ["Petunjuk Jarak", "📜"],
+        orb1: ["Orb Sihir 1", "🔮"],
+        orb2: ["Orb Sihir 2", "🔮"]
+      };
+      const n = names[puzzle.reward] || [puzzle.reward, "✨"];
+      addItem(puzzle.reward, n[0], n[1]);
+    }
+  }
+
+  // Special rewards that give crystal directly
+  if (["gate_key","crystal_lake","crystal_kingdom","crystal_tower","crystal_sky"].includes(puzzle.reward) || puzzle.id === "finalBoss") {
+    setTimeout(() => {
+      closePuzzle();
+      if (puzzle.id === "gatePuzzle") {
+        setDialogue("Lumina", "🧚‍♀️", "Gerbang terbuka dengan cahaya hijau!", [
+          { text: "Masuk dan ambil kristal", action: () => collectCrystal(0) }
+        ]);
+      } else if (puzzle.id === "lakeFinal") collectCrystal(1);
+      else if (puzzle.id === "kingdomFinal") collectCrystal(2);
+      else if (puzzle.id === "towerFinal") collectCrystal(3);
+      else if (puzzle.id === "finalBoss") collectCrystal(4);
+    }, 1500);
+  } else {
+    setTimeout(closePuzzle, 1600);
+  }
+}
+
+function collectCrystal(idx) {
+  if (state.crystals[idx]) return;
+  state.crystals[idx] = true;
+  state.score += 200;
+  const r = REALMS[idx];
+  $("complete-crystal").textContent = r.crystal;
+  $("complete-text").textContent = `Kristal ${r.name} berhasil dikembalikan! Cahaya mulai kembali ke alam ini.`;
+  hide($("game-wrapper"));
+  show($("screen-complete"));
+  toast(`${r.crystal} Kristal diperoleh! +200 poin`);
+}
+
+function showFinal() {
+  hide($("screen-map"));
+  $("final-score").textContent = state.score;
+  $("final-crystals").textContent = "5";
+  let title = "Penjelajah Realms";
+  if (state.score >= 1500) title = "Master of the Circle Realms";
+  else if (state.score >= 1000) title = "Pahlawan Enchanted Realms";
+  else if (state.score >= 600) title = "Penjaga Kristal";
+  $("final-title").textContent = title;
+  show($("screen-final"));
+}
+
+function openInventory() {
+  if (state.inventory.length === 0) toast("Inventory masih kosong. Jelajahi dan kumpulkan benda!");
+  else toast("Inventory: " + state.inventory.map(i => i.emoji + " " + i.name).join(", "), 3500);
+}
+
+// ===================== DIAGRAMS =====================
+function getDiagram(type) {
+  const v = `width="260" height="180" viewBox="0 0 260 180"`;
+  switch(type) {
+    case "radius":
+      return `<svg ${v}>
+        <circle cx="130" cy="90" r="65" fill="#1a3a2a" stroke="#2ecc71" stroke-width="3"/>
+        <circle cx="130" cy="90" r="4" fill="#f0c14b"/>
+        <line x1="130" y1="90" x2="195" y2="90" stroke="#e74c3c" stroke-width="3"/>
+        <text x="128" y="82" fill="#f0c14b" font-size="13" font-weight="bold">O</text>
+        <text x="200" y="95" fill="#e74c3c" font-size="13" font-weight="bold">A</text>
+        <text x="155" y="80" fill="#e74c3c" font-size="12">r</text>
+      </svg>`;
+    case "diameter":
+      return `<svg ${v}>
+        <circle cx="130" cy="90" r="65" fill="#1a2a3a" stroke="#5dade2" stroke-width="3"/>
+        <circle cx="130" cy="90" r="4" fill="#f0c14b"/>
+        <line x1="65" y1="90" x2="195" y2="90" stroke="#e74c3c" stroke-width="3"/>
+        <text x="50" y="95" fill="#e74c3c" font-size="13" font-weight="bold">A</text>
+        <text x="200" y="95" fill="#e74c3c" font-size="13" font-weight="bold">B</text>
+        <text x="128" y="82" fill="#f0c14b" font-size="12">O</text>
+      </svg>`;
+    case "central":
+      return `<svg ${v}>
+        <circle cx="130" cy="90" r="65" fill="#2a1a3a" stroke="#9b59b6" stroke-width="3"/>
+        <circle cx="130" cy="90" r="4" fill="#f0c14b"/>
+        <line x1="130" y1="90" x2="85" y2="40" stroke="#e74c3c" stroke-width="2"/>
+        <line x1="130" y1="90" x2="195" y2="50" stroke="#e74c3c" stroke-width="2"/>
+        <line x1="85" y1="40" x2="130" y2="155" stroke="#5dade2" stroke-width="2"/>
+        <line x1="195" y1="50" x2="130" y2="155" stroke="#5dade2" stroke-width="2"/>
+        <text x="75" y="35" fill="#e74c3c" font-size="12" font-weight="bold">A</text>
+        <text x="200" y="48" fill="#e74c3c" font-size="12" font-weight="bold">B</text>
+        <text x="125" y="170" fill="#5dade2" font-size="12" font-weight="bold">C</text>
+        <text x="125" y="82" fill="#f0c14b" font-size="11">O</text>
+      </svg>`;
+    case "semi":
+      return `<svg ${v}>
+        <circle cx="130" cy="90" r="65" fill="#1a1a2e" stroke="#e74c3c" stroke-width="3"/>
+        <line x1="65" y1="90" x2="195" y2="90" stroke="#f0c14b" stroke-width="3"/>
+        <line x1="65" y1="90" x2="150" y2="35" stroke="#5dade2" stroke-width="2"/>
+        <line x1="195" y1="90" x2="150" y2="35" stroke="#5dade2" stroke-width="2"/>
+        <text x="50" y="95" fill="#f0c14b" font-size="12" font-weight="bold">A</text>
+        <text x="200" y="95" fill="#f0c14b" font-size="12" font-weight="bold">B</text>
+        <text x="145" y="28" fill="#5dade2" font-size="12" font-weight="bold">C</text>
+        <text x="140" y="70" fill="#e74c3c" font-size="13" font-weight="bold">90°</text>
+      </svg>`;
+    case "chords":
+      return `<svg ${v}>
+        <circle cx="130" cy="90" r="65" fill="#2a220a" stroke="#f0c14b" stroke-width="3"/>
+        <circle cx="130" cy="90" r="4" fill="#f0c14b"/>
+        <line x1="80" y1="50" x2="180" y2="50" stroke="#2ecc71" stroke-width="3"/>
+        <line x1="95" y1="140" x2="165" y2="140" stroke="#e74c3c" stroke-width="3"/>
+        <line x1="130" y1="90" x2="130" y2="50" stroke="#aaa" stroke-width="1" stroke-dasharray="3"/>
+        <line x1="130" y1="90" x2="130" y2="140" stroke="#aaa" stroke-width="1" stroke-dasharray="3"/>
+        <text x="115" y="42" fill="#2ecc71" font-size="11">dekat</text>
+        <text x="115" y="155" fill="#e74c3c" font-size="11">jauh</text>
+      </svg>`;
+    case "mixed":
+      return `<svg ${v}>
+        <circle cx="130" cy="90" r="65" fill="#1a0a2e" stroke="#9b59b6" stroke-width="3"/>
+        <line x1="65" y1="90" x2="195" y2="90" stroke="#f0c14b" stroke-width="3"/>
+        <line x1="65" y1="90" x2="160" y2="35" stroke="#5dade2" stroke-width="2"/>
+        <line x1="195" y1="90" x2="160" y2="35" stroke="#5dade2" stroke-width="2"/>
+        <line x1="130" y1="90" x2="160" y2="35" stroke="#e74c3c" stroke-width="2"/>
+        <text x="50" y="95" fill="#f0c14b" font-size="12">A</text>
+        <text x="200" y="95" fill="#f0c14b" font-size="12">B</text>
+        <text x="155" y="28" fill="#5dade2" font-size="12">C</text>
+        <text x="125" y="82" fill="#f0c14b" font-size="11">O</text>
+      </svg>`;
+    default:
+      return `<svg ${v}><circle cx="130" cy="90" r="65" fill="#222" stroke="#666" stroke-width="3"/></svg>`;
+  }
+}
+
+// Init
+renderInventory();
+</script>
+
+<a href="index.html" title="Kembali ke Portal Utama" style="position:fixed;bottom:16px;right:16px;z-index:9999;background:rgba(15,23,42,0.9);color:#fcd34d;border:1px solid rgba(252,211,77,0.45);padding:9px 14px;border-radius:99px;font-family:system-ui,sans-serif;font-size:12px;font-weight:700;text-decoration:none;box-shadow:0 6px 20px rgba(0,0,0,0.4);backdrop-filter:blur(8px);display:inline-flex;align-items:center;gap:6px;">
+  ← Portal Utama
+</a>
+</body>
+
+</html>
